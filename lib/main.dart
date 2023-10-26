@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:geocoding/geocoding.dart' hide Location;
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:location/location.dart';
+
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized(); // Initialise la liaison Flutter
+  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   runApp(const MyApp());
 }
 
@@ -37,11 +43,23 @@ class _MyHomePageState extends State<MyHomePage> {
   String key = 'villes';
   late List<String> cities = [];
   String citySelected = '';
+  //late Coordinates coordCitySelected;
+
+  //user location
+  late Location location;
+  late LocationData locationData;
+  late Stream<LocationData> stream;
+
+  static const MethodChannel _channel = MethodChannel('github.com/aloisdeniel/geocoder');
 
   @override
-  void initState() {
+  void initState(){
+    //TODO: implement initState
     super.initState();
     getCity();
+    location = Location();
+    getFirstLocation();
+    listenToStream();
   }
 
   @override
@@ -92,6 +110,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   onTap: (){
                     setState(() {
                       citySelected = city;
+                      //coordsFormCity(citySelected);
                       Navigator.pop(context);
                     });
                   },
@@ -164,4 +183,40 @@ class _MyHomePageState extends State<MyHomePage> {
     await sharedPreferences.setStringList(key, cities);
     getCity();
   }
+
+//Location
+  //get location once
+  getFirstLocation() async {
+    try{
+      locationData = await location.getLocation();
+      print("Nouvelle position: ${locationData.latitude} / ${locationData.longitude}");
+      locationToString();
+    } catch (e) {
+      print("Nous avons une erreur: $e");
+    }
+  }
+
+  //get location for each changed position
+  listenToStream(){
+    stream = location.onLocationChanged;
+    stream.listen((newPosition) {
+
+      if ((newPosition.longitude != locationData.longitude) && (newPosition.latitude != locationData.latitude)) {
+        setState(() {
+          locationData = newPosition;
+          locationToString();
+        });
+        print("New => ${newPosition.latitude} ---- ${newPosition.longitude}");
+      }
+    });
+  }
+
+  //Geocoder
+  locationToString() async {
+    final cityName = await placemarkFromCoordinates(locationData.latitude!, locationData.longitude!);
+    print("${cityName.first.locality}");
+  }
+
+
+
 }
