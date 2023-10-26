@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geocoding/geocoding.dart' hide Location;
+import 'package:geocoding_platform_interface/src/models/location.dart';
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:location/location.dart';
+import 'package:location/location.dart' as GeocoderLocation;
+import 'package:http/http.dart' as http;
 
 
 void main() {
@@ -43,21 +45,20 @@ class _MyHomePageState extends State<MyHomePage> {
   String key = 'villes';
   late List<String> cities = [];
   String citySelected = '';
-  //late Coordinates coordCitySelected;
+  late String longAddressSelected;
+  late String latAddressSelected;
 
   //user location
-  late Location location;
-  late LocationData locationData;
-  late Stream<LocationData> stream;
-
-  static const MethodChannel _channel = MethodChannel('github.com/aloisdeniel/geocoder');
+  late GeocoderLocation.Location location;
+  late GeocoderLocation.LocationData locationData;
+  late Stream<GeocoderLocation.LocationData> stream;
 
   @override
   void initState(){
     //TODO: implement initState
     super.initState();
     getCity();
-    location = Location();
+    location = GeocoderLocation.Location();
     getFirstLocation();
     listenToStream();
   }
@@ -95,6 +96,8 @@ class _MyHomePageState extends State<MyHomePage> {
                   onTap: (){
                     setState(() {
                       citySelected = '';
+                      latAddressSelected = '';
+                      longAddressSelected = '';
                       Navigator.pop(context);
                     });
                   },
@@ -110,7 +113,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   onTap: (){
                     setState(() {
                       citySelected = city;
-                      //coordsFormCity(citySelected);
+                      coordsFormCity();
                       Navigator.pop(context);
                     });
                   },
@@ -189,7 +192,7 @@ class _MyHomePageState extends State<MyHomePage> {
   getFirstLocation() async {
     try{
       locationData = await location.getLocation();
-      print("Nouvelle position: ${locationData.latitude} / ${locationData.longitude}");
+      print("Nouvelle position: ${locationData.latitude!} / ${locationData.longitude!}");
       locationToString();
     } catch (e) {
       print("Nous avons une erreur: $e");
@@ -215,8 +218,45 @@ class _MyHomePageState extends State<MyHomePage> {
   locationToString() async {
     final cityName = await placemarkFromCoordinates(locationData.latitude!, locationData.longitude!);
     print("${cityName.first.locality}");
+    api();
+  }
+  
+  coordsFormCity() async {
+    List<Location> addresses  = await locationFromAddress('$citySelected');
+    print("$addresses");
+    if (addresses.length > 0) {
+      latAddressSelected = '${addresses.first.latitude}';
+      longAddressSelected = '${addresses.first.longitude}';
+      setState(() {
+        print('$longAddressSelected, $latAddressSelected');
+        api();
+      });
+    }
   }
 
+  api() async{
+    late String? lat;
+    late String? long;
+    if ((latAddressSelected != '') && (longAddressSelected != '')){
+      lat = latAddressSelected;
+      long = longAddressSelected;
+    } else if (locationData != ''){
+      latAddressSelected = locationData.latitude.toString();
+      longAddressSelected = locationData.longitude.toString();
+    }
+    if ((lat != null) && (long != null)){
+      const key = "&APPID=89291277ba7cb8e7ee3f2afebf2a181d";
+      String lang = "&lang=${Localizations.localeOf(context).languageCode}";
+      String baseAPI = "http://api.openweathermap.org/data/2.5/forecast?";
+      String coordString = "lat=$latAddressSelected&lon=$longAddressSelected";
+      String units = "&units=metrics";
+      String totalString = baseAPI + coordString + units + lang + key;
 
+      final response = await http.get(Uri.parse(totalString));
+      if (response.statusCode == 200){
+        print("${response.body}");
+      }
+    }
+  }
 
 }
