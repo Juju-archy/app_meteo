@@ -14,7 +14,7 @@ class Temperature {
   Temperature();
 
   factory Temperature.fromJSON(Map map) {
-    debugPrint('map $map');
+    //debugPrint('map $map');
 
     var temperature = Temperature();
 
@@ -32,6 +32,7 @@ class Temperature {
         if (weatherData.isNotEmpty) {
           temperature.main = weatherData[0]["main"];
           temperature.description = weatherData[0]["description"];
+          temperature.icon = weatherData[0]["icon"];
         }
       }
     }
