@@ -257,11 +257,17 @@ class _MyHomePageState extends State<MyHomePage> {
       final response = await http.get(Uri.parse(totalString));
       if (response.statusCode == 200){
 
-        Temperature temps = new Temperature();
         final map = json.decode(response.body);
-
-        temps.fromJSON(map);
-        print(map);
+        Temperature temps = new Temperature.fromJSON(map);
+        //temperature = temps;
+        print(temps);
+        print('Main: ${temps.main}');
+        print('Description: ${temps.description}');
+        print('Temp: ${temps.temp}');
+        print('Pressure: ${temps.pressure}');
+        print('Humidity: ${temps.humidity}');
+        print('Temp Min: ${temps.temp_min}');
+        print('Temp Max: ${temps.temp_max}');
         setState(() {
           //temperature = temps;
 

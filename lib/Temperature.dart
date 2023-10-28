@@ -1,9 +1,10 @@
 
+import 'package:flutter/material.dart';
+
 class Temperature {
-  late String name;
-  late String main;
-  late String description;
-  late String icon;
+  var main;
+  var description;
+  var icon;
   var temp;
   var pressure;
   var humidity;
@@ -12,19 +13,28 @@ class Temperature {
 
   Temperature();
 
-  void fromJSON(Map map) {
-    this.name = map["name"];
+  factory Temperature.fromJSON(Map map) {
+    debugPrint('map $map');
 
-    List weather = map["weather"];
-    Map mapWeather = weather[0];
-    this.main = mapWeather["main"];
-    this.description = mapWeather["description"];
-    Map main = map["main"];
-    this.temp = main["temp"];
-    this.pressure = main["pressure"];
-    this.humidity = main["humidity"];
-    this.temp_min = main["temp_min"];
-    this.temp_max = main["temp_max"];
-    pressure: map['pressure'];
+    var temperature = Temperature();
+
+    if (map.containsKey("list") && map["list"] is List && map["list"].isNotEmpty) {
+      Map mainData = map["list"][0]["main"];
+      List weatherData = map["list"][0]["weather"];
+
+      if (mainData != null && mainData is Map && weatherData != null && weatherData is List) {
+        temperature.temp = mainData["temp"];
+        temperature.pressure = mainData["pressure"];
+        temperature.humidity = mainData["humidity"];
+        temperature.temp_min = mainData["temp_min"];
+        temperature.temp_max = mainData["temp_max"];
+
+        if (weatherData.isNotEmpty) {
+          temperature.main = weatherData[0]["main"];
+          temperature.description = weatherData[0]["description"];
+        }
+      }
+    }
+    return temperature;
   }
 }
