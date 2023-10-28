@@ -25,11 +25,18 @@ class _MyHomePageState extends State<MyHomePage> {
   String citySelected = '';
   String? longAddressSelected;
   String? latAddressSelected;
+
   //user location
   GeocoderLocation.Location? location;
-  late GeocoderLocation.LocationData locationData;
+  late GeocoderLocation.LocationData? locationData;
   late Stream<GeocoderLocation.LocationData> stream;
-  late Temperature temperature;
+
+  //Temperature
+  late Temperature temperature = Temperature();
+
+  AssetImage night = const AssetImage("lib/assets/n.jpg");
+  AssetImage sun = const AssetImage("lib/assets/d1.jpg");
+  AssetImage rain = const AssetImage("lib/assets/d2.jpg");
 
   @override
   void initState(){
@@ -44,66 +51,87 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        centerTitle: true,
-        title: Text(widget.title),
-      ),
-      drawer: Drawer(
-        child: Container(
-          color: Colors.deepPurple,
-          child: ListView.builder(
-            itemCount: cities.length + 2,
-            itemBuilder: (context, i){
-              if (i == 0) {
-                return DrawerHeader(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      textWithStyle("Mes villes", fontSize: 22.0),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(backgroundColor: Colors.white, elevation: 10.0),
-                        onPressed: addCity,
-                        child: textWithStyle("Ajouter une ville", color: Colors.deepPurple),
-                      ),
-                    ],
-                  ),
-                );
-              } else if(i == 1) {
-                return ListTile(
-                  title: textWithStyle("Ma ville actuelle"),
-                  onTap: (){
-                    setState(() {
-                      citySelected = '';
-                      latAddressSelected = '';
-                      longAddressSelected = '';
-                      Navigator.pop(context);
-                    });
-                  },
-                );
-              } else {
-                String city = cities[i-2];
-                return ListTile(
-                  title: textWithStyle(city),
-                  trailing: IconButton(
-                    icon: Icon(Icons.delete, color: Colors.white),
-                    onPressed: (() => deleteCity(city)),
-                  ),
-                  onTap: (){
-                    setState(() {
-                      citySelected = city;
-                      coordsFormCity();
-                      Navigator.pop(context);
-                    });
-                  },
-                );
-              }
-            },
+        appBar: AppBar(
+          centerTitle: true,
+          title: Text(widget.title),
+        ),
+        drawer: Drawer(
+          child: Container(
+            color: Colors.deepPurple,
+            child: ListView.builder(
+              itemCount: cities.length + 2,
+              itemBuilder: (context, i){
+                if (i == 0) {
+                  return DrawerHeader(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        textWithStyle("Mes villes", fontSize: 22.0),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.white, elevation: 10.0),
+                          onPressed: addCity,
+                          child: textWithStyle("Ajouter une ville", color: Colors.deepPurple),
+                        ),
+                      ],
+                    ),
+                  );
+                } else if(i == 1) {
+                  return ListTile(
+                    title: textWithStyle("Ma ville actuelle"),
+                    onTap: (){
+                      setState(() {
+                        citySelected = '';
+                        latAddressSelected = null;
+                        longAddressSelected = null;
+                        Navigator.pop(context);
+                        api();
+                      });
+                    },
+                  );
+                } else {
+                  String city = cities[i-2];
+                  return ListTile(
+                    title: textWithStyle(city),
+                    trailing: IconButton(
+                      icon: Icon(Icons.delete, color: Colors.white),
+                      onPressed: (() => deleteCity(city)),
+                    ),
+                    onTap: (){
+                      setState(() {
+                        citySelected = city;
+                        coordsFormCity();
+                        Navigator.pop(context);
+                      });
+                    },
+                  );
+                }
+              },
+            ),
           ),
         ),
-      ),
-      body: Center(
-        child: Text((citySelected == '') ? "ville actuelle": citySelected),
-      ),
+        body:(temperature == null)
+            ? Center(child: Text((citySelected == '') ? citySelected: citySelected),)
+            : Container (
+          width: MediaQuery.of(context).size.width,
+          height: MediaQuery.of(context).size.height,
+          decoration: BoxDecoration(
+              image: DecorationImage(image: getBackground(), fit: BoxFit.cover)
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              textWithStyle((citySelected) == '' ? "Ville actuelle" : citySelected, fontSize: 40.0, fontStyle: FontStyle.italic),
+              textWithStyle(temperature.description, fontSize: 30.0),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  Image.network("https://openweathermap.org/img/wn/${temperature.icon}@2x.png", scale: 0.8,),
+                  textWithStyle('${temperature.temp.toInt()}°C', fontSize: 75.0),
+                ],
+              ),
+            ],
+          ),
+        )
     );
   }
 
@@ -165,13 +193,26 @@ class _MyHomePageState extends State<MyHomePage> {
     getCity();
   }
 
+  AssetImage getBackground() {
+    if(temperature.icon.contains("n")){
+      return night;
+    } else {
+      if(temperature.icon.contains("01") || temperature.icon.contains("02") || temperature.icon.contains("03")){
+        return sun;
+      } else {
+        return rain;
+      }
+    }
+  }
+
 //Location
   //get location once
   getFirstLocation() async {
     try{
       locationData = await location!.getLocation();
-      print("Nouvelle position: ${locationData.latitude} / ${locationData.longitude}");
+      print("Nouvelle position: ${locationData!.latitude} / ${locationData!.longitude}");
       locationToString();
+      api();
     } catch (e) {
       print("Nous avons une erreur: $e");
     }
@@ -182,36 +223,35 @@ class _MyHomePageState extends State<MyHomePage> {
     stream = location!.onLocationChanged;
     stream.listen((newPosition) {
 
-      if ((newPosition.longitude != locationData?.longitude) && (newPosition.latitude != locationData?.latitude)) {
+      if (locationData == null || ((newPosition.longitude != locationData!.longitude) && (newPosition.latitude != locationData!.latitude))) {
         setState(() {
           locationData = newPosition;
           locationToString();
+          print("New => ${newPosition.latitude} ---- ${newPosition.longitude}");
         });
-        print("New => ${newPosition.latitude} ---- ${newPosition.longitude}");
-
       }
     });
   }
 
   //Geocoder
   locationToString() async {
-    final cityName = await placemarkFromCoordinates(locationData.latitude!, locationData.longitude!);
+    final cityName = await placemarkFromCoordinates(locationData!.latitude!, locationData!.longitude!);
     print("${cityName.first.locality}");
+    citySelected = cityName.toString();
+    return cityName;
   }
 
   coordsFormCity() async {
     List<Location> addresses  = await locationFromAddress('$citySelected');
     print("$addresses");
     if (addresses.length > 0) {
-      latAddressSelected = '${addresses.first.latitude}';
-      longAddressSelected = '${addresses.first.longitude}';
       setState(() {
+        latAddressSelected = '${addresses.first.latitude}';
+        longAddressSelected = '${addresses.first.longitude}';
         //print('$longAddressSelected, $latAddressSelected');
         api();
       });
-
     }
-
   }
 
   api() async{
@@ -220,16 +260,18 @@ class _MyHomePageState extends State<MyHomePage> {
     if ((latAddressSelected != null) && (longAddressSelected != null)){
       lat = latAddressSelected;
       long = longAddressSelected;
-    } else if (locationData.longitude != null && locationData.latitude != null){
-      latAddressSelected = locationData.latitude.toString();
-      longAddressSelected = locationData.longitude.toString();
+    } else if (locationData!.longitude != null && locationData!.latitude != null){
+      latAddressSelected = locationData!.latitude.toString();
+      longAddressSelected = locationData!.longitude.toString();
+      lat = latAddressSelected;
+      long = longAddressSelected;
     }
     if ((lat != null) && (long != null)){
       const key = "&appid=89291277ba7cb8e7ee3f2afebf2a181d";
       String lang = "&lang=${Localizations.localeOf(context).languageCode}";
-      String baseAPI = "http://api.openweathermap.org/data/2.5/forecast?";
+      const String baseAPI = "http://api.openweathermap.org/data/2.5/forecast?";
       String coordString = "lat=$latAddressSelected&lon=$longAddressSelected";
-      String units = "&units=metrics";
+      String units = "&units=metric";
       String totalString = baseAPI+coordString+lang+key+units;
 
       final response = await http.get(Uri.parse(totalString));
@@ -237,21 +279,30 @@ class _MyHomePageState extends State<MyHomePage> {
 
         final map = json.decode(response.body);
         Temperature temps = new Temperature.fromJSON(map);
-        print(temps);
-        print('Main: ${temps.main}');
-        print('Description: ${temps.description}');
-        print('Temp: ${temps.temp}');
-        print('Pressure: ${temps.pressure}');
-        print('Humidity: ${temps.humidity}');
-        print('Temp Min: ${temps.temp_min}');
-        print('Temp Max: ${temps.temp_max}');
+
+        // Géolocalisation inverse pour obtenir la ville
+        final cityName = await placemarkFromCoordinates(double.parse(lat), double.parse(long));
+        if (cityName.isNotEmpty) {
+          final city = cityName.first.locality;
+          setState(() {
+            citySelected = city!;
+          });
+        }
+
+        print(response.body);
+        //print('Main: ${temps.main}');
+        //print('Description: ${temps.description}');
+        //print('Temp: ${temps.temp}');
+        //print('Pressure: ${temps.pressure}');
+        //print('Humidity: ${temps.humidity}');
+        //print('Temp Min: ${temps.temp_min}');
+        //print('Temp Max: ${temps.temp_max}');
+        //print('Icon : ${temps.icon}');
         setState(() {
           temperature = temps;
         });
-
       }
     }
-
   }
 
 }
