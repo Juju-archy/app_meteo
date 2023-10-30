@@ -20,27 +20,27 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
 
+  // Déclaration des variables et initialisation
   String key = 'villes';
   late List<String> cities = [];
   String citySelected = '';
   String? longAddressSelected;
   String? latAddressSelected;
 
-  //user location
+  // Location de l'utilisateur
   GeocoderLocation.Location? location;
   late GeocoderLocation.LocationData? locationData;
   late Stream<GeocoderLocation.LocationData> stream;
 
-  //Temperature
+  // Température et images pour le fond
   late Temperature temperature = Temperature();
-
   AssetImage night = const AssetImage("lib/assets/n.jpg");
   AssetImage sun = const AssetImage("lib/assets/d1.jpg");
   AssetImage rain = const AssetImage("lib/assets/d2.jpg");
 
   @override
   void initState(){
-    //TODO: implement initState
+    // Initialisation des données et gestion de la localisation
     super.initState();
     getCity();
     location = GeocoderLocation.Location();
@@ -50,6 +50,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    // Affichage de l'interface utilisateur
     return Scaffold(
         appBar: AppBar(
           centerTitle: true,
@@ -109,24 +110,42 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
           ),
         ),
-        body:(temperature == null)
-            ? Center(child: Text((citySelected == '') ? citySelected: citySelected),)
-            : Container (
+        body:(temperature == '') ? Center(child: Text((citySelected == '') ? citySelected: citySelected),) : Container (
           width: MediaQuery.of(context).size.width,
           height: MediaQuery.of(context).size.height,
           decoration: BoxDecoration(
-              image: DecorationImage(image: getBackground(), fit: BoxFit.cover)
+            image: DecorationImage(image: getBackground(), fit: BoxFit.cover),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               textWithStyle((citySelected) == '' ? "Ville actuelle" : citySelected, fontSize: 40.0, fontStyle: FontStyle.italic),
-              textWithStyle(temperature.description, fontSize: 30.0),
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Image.network("https://openweathermap.org/img/wn/${temperature.icon}@2x.png", scale: 0.8,),
-                  textWithStyle('${temperature.temp.toInt()}°C', fontSize: 75.0),
+                  Container(
+                    width: MediaQuery.of(context).size.width / 1.2,
+                    height: MediaQuery.of(context).size.height / 2,
+                    decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(30.0)
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        textWithStyle(temperature.description, fontSize: 30.0),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            Image.network("https://openweathermap.org/img/wn/${temperature.icon}@2x.png", scale: 0.8,),
+                            textWithStyle('${temperature.temp.toInt()}°C', fontSize: 75.0),
+                          ],
+                        ),
+                      ],
+
+                    ),
+                  ),
+
                 ],
               ),
             ],
@@ -135,6 +154,7 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
+  /// Fonction pour créer un texte avec des styles personnalisés
   Text textWithStyle(String data, {color = Colors.white, fontSize = 20.0, fontStyle = FontStyle.italic, textAlign = TextAlign.center}) {
     return Text(
       data,
@@ -147,6 +167,7 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
+  /// Fonction pour ajouter une ville
   Future<void> addCity() async {
     return showDialog(
       barrierDismissible: true,
@@ -159,7 +180,7 @@ class _MyHomePageState extends State<MyHomePage> {
             TextField(
               decoration: InputDecoration(labelText: "ville: "),
               onSubmitted: (String str){
-                ajouter(str);
+                saveCity(str);
                 Navigator.pop(buildcontext);
               },
             )
@@ -169,6 +190,7 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
+  /// Fonction pour récupérer la liste des villes depuis les préférences partagées
   void getCity() async {
     SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
     List<String>? list = await sharedPreferences.getStringList(key);
@@ -179,13 +201,15 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  void ajouter (String str) async {
+  /// Fonction pour sauvegarder une ville dans les préférences partagées
+  void saveCity (String str) async {
     SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
     cities.add(str);
     await sharedPreferences.setStringList(key, cities);
     getCity();
   }
 
+  /// Fonction pour supprimer une ville de la liste
   void deleteCity(String str) async{
     SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
     cities.remove(str);
@@ -193,6 +217,7 @@ class _MyHomePageState extends State<MyHomePage> {
     getCity();
   }
 
+  /// Fonction pour obtenir l'image de fond en fonction de l'icône de la température
   AssetImage getBackground() {
     if(temperature.icon.contains("n")){
       return night;
@@ -206,7 +231,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
 //Location
-  //get location once
+  /// Fonction pour obtenir la première position de l'utilisateur
   getFirstLocation() async {
     try{
       locationData = await location!.getLocation();
@@ -218,7 +243,7 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  //get location for each changed position
+  /// Fonction pour écouter les changements de position de l'utilisateur
   listenToStream(){
     stream = location!.onLocationChanged;
     stream.listen((newPosition) {
@@ -233,7 +258,7 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  //Geocoder
+  /// Fonction pour convertir la position en nom de vill
   locationToString() async {
     final cityName = await placemarkFromCoordinates(locationData!.latitude!, locationData!.longitude!);
     print("${cityName.first.locality}");
@@ -241,6 +266,7 @@ class _MyHomePageState extends State<MyHomePage> {
     return cityName;
   }
 
+  /// Fonction pour obtenir les coordonnées à partir du nom de la ville
   coordsFormCity() async {
     List<Location> addresses  = await locationFromAddress('$citySelected');
     print("$addresses");
@@ -254,6 +280,7 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  /// Fonction pour interroger l'API météo
   api() async{
     late String? lat;
     late String? long;
