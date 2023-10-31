@@ -33,7 +33,7 @@ class _MyHomePageState extends State<MyHomePage> {
   late Stream<GeocoderLocation.LocationData> stream;
 
   // Température et images pour le fond
-  late Temperature temperature = Temperature();
+  late Temperature? temperature = Temperature();
   AssetImage night = const AssetImage("lib/assets/n.jpg");
   AssetImage sun = const AssetImage("lib/assets/d1.jpg");
   AssetImage rain = const AssetImage("lib/assets/d2.jpg");
@@ -133,12 +133,12 @@ class _MyHomePageState extends State<MyHomePage> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        textWithStyle(temperature.description, fontSize: 30.0),
+                        textWithStyle((temperature?.description != null)?temperature?.description:'Chargement ...', fontSize: 30.0),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
-                            Image.network("https://openweathermap.org/img/wn/${temperature.icon}@2x.png", scale: 0.8,),
-                            textWithStyle('${temperature.temp.toInt()}°C', fontSize: 75.0),
+                            Image.network((temperature?.icon != null) ? "https://openweathermap.org/img/wn/${temperature?.icon}@2x.png" : 'Chargement ...', scale: 0.8,),
+                            textWithStyle((temperature?.temp != null)?'${temperature?.temp.toInt()}°C':' ', fontSize: 75.0),
                           ],
                         ),
                       ],
@@ -219,15 +219,18 @@ class _MyHomePageState extends State<MyHomePage> {
 
   /// Fonction pour obtenir l'image de fond en fonction de l'icône de la température
   AssetImage getBackground() {
-    if(temperature.icon.contains("n")){
-      return night;
-    } else {
-      if(temperature.icon.contains("01") || temperature.icon.contains("02") || temperature.icon.contains("03")){
-        return sun;
+    if(temperature?.icon != null){
+      if(temperature?.icon.contains("n")){
+        return night;
       } else {
-        return rain;
+        if(temperature?.icon.contains("01") || temperature?.icon.contains("02") || temperature?.icon.contains("03")){
+          return sun;
+        } else {
+          return rain;
+        }
       }
     }
+    return sun;
   }
 
 //Location
@@ -235,7 +238,7 @@ class _MyHomePageState extends State<MyHomePage> {
   getFirstLocation() async {
     try{
       locationData = await location!.getLocation();
-      print("Nouvelle position: ${locationData!.latitude} / ${locationData!.longitude}");
+      //print("Nouvelle position: ${locationData!.latitude} / ${locationData!.longitude}");
       locationToString();
       api();
     } catch (e) {
@@ -252,7 +255,7 @@ class _MyHomePageState extends State<MyHomePage> {
         setState(() {
           locationData = newPosition;
           locationToString();
-          print("New => ${newPosition.latitude} ---- ${newPosition.longitude}");
+          //print("New => ${newPosition.latitude} ---- ${newPosition.longitude}");
         });
       }
     });
@@ -261,7 +264,7 @@ class _MyHomePageState extends State<MyHomePage> {
   /// Fonction pour convertir la position en nom de vill
   locationToString() async {
     final cityName = await placemarkFromCoordinates(locationData!.latitude!, locationData!.longitude!);
-    print("${cityName.first.locality}");
+    //print("${cityName.first.locality}");
     citySelected = cityName.toString();
     return cityName;
   }
@@ -269,7 +272,7 @@ class _MyHomePageState extends State<MyHomePage> {
   /// Fonction pour obtenir les coordonnées à partir du nom de la ville
   coordsFormCity() async {
     List<Location> addresses  = await locationFromAddress('$citySelected');
-    print("$addresses");
+    //print("$addresses");
     if (addresses.length > 0) {
       setState(() {
         latAddressSelected = '${addresses.first.latitude}';
@@ -316,7 +319,7 @@ class _MyHomePageState extends State<MyHomePage> {
           });
         }
 
-        print(response.body);
+        //print(response.body);
         //print('Main: ${temps.main}');
         //print('Description: ${temps.description}');
         //print('Temp: ${temps.temp}');
