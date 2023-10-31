@@ -68,6 +68,7 @@ flutter:
     - lib/assets/d1.jpg
     - lib/assets/d2.jpg
     - lib/assets/n.jpg
+    - lib/assets/weather.png
 
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg

@@ -33,7 +33,7 @@ class _MyHomePageState extends State<MyHomePage> {
   late Stream<GeocoderLocation.LocationData> stream;
 
   // Température et images pour le fond
-  late Temperature? temperature = Temperature();
+  late Temperature temperature = Temperature();
   AssetImage night = const AssetImage("lib/assets/n.jpg");
   AssetImage sun = const AssetImage("lib/assets/d1.jpg");
   AssetImage rain = const AssetImage("lib/assets/d2.jpg");
@@ -42,7 +42,7 @@ class _MyHomePageState extends State<MyHomePage> {
   void initState(){
     // Initialisation des données et gestion de la localisation
     super.initState();
-    getCity();
+    //getCity();
     location = GeocoderLocation.Location();
     getFirstLocation();
     listenToStream();
@@ -110,46 +110,62 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
           ),
         ),
-        body:(temperature == null) ? Center(child: Text((citySelected == '') ? citySelected: citySelected),) : Container (
+        body:(temperature.icon == null)
+            ? Center(
+          child: Text((citySelected == '') ? citySelected: citySelected),
+        )
+            : Container (
           width: MediaQuery.of(context).size.width,
           height: MediaQuery.of(context).size.height,
           decoration: BoxDecoration(
             image: DecorationImage(image: getBackground(), fit: BoxFit.cover),
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              textWithStyle((citySelected) == '' ? "Ville actuelle" : citySelected, fontSize: 40.0, fontStyle: FontStyle.italic),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+          child: SingleChildScrollView(
+            physics: NeverScrollableScrollPhysics(),
+            child: Container(
+              constraints: BoxConstraints.expand(
+                height:  MediaQuery.of(context).size.height * 0.9,
+                width: MediaQuery.of(context).size.width * 0.9,
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  Container(
-                    width: MediaQuery.of(context).size.width / 1.2,
-                    height: MediaQuery.of(context).size.height / 2,
-                    decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(30.0)
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        textWithStyle((temperature?.description != null)?temperature?.description:'Chargement ...', fontSize: 30.0),
-                        Row(
+                  textWithStyle((citySelected) == '' ? "Ville actuelle" : citySelected, fontSize: 40.0, fontStyle: FontStyle.italic),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+
+                        width: MediaQuery.of(context).size.width / 1.2,
+                        height: MediaQuery.of(context).size.height / 2,
+                        decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(30.0)
+                        ),
+                        child: Column(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
-                            Image.network((temperature?.icon != null) ? "https://openweathermap.org/img/wn/${temperature?.icon}@2x.png" : 'Chargement ...', scale: 0.8,),
-                            textWithStyle((temperature?.temp != null)?'${temperature?.temp.toInt()}°C':' ', fontSize: 75.0),
+                            textWithStyle((temperature.description != null)?temperature.description:' ', fontSize: 30.0),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                Image.network((temperature.icon != null)?"https://openweathermap.org/img/wn/${temperature.icon}@2x.png": "https://openweathermap.org/img/wn/10d@2x.png", scale: 0.8,),
+                                textWithStyle((temperature.temp != null)?'${temperature .temp.toInt()}°C':' ', fontSize: 75.0),
+                              ],
+                            ),
                           ],
+
                         ),
-                      ],
+                      ),
 
-                    ),
+                    ],
                   ),
-
                 ],
               ),
-            ],
-          ),
+              ),
+
+          )
+
         )
     );
   }
@@ -219,11 +235,11 @@ class _MyHomePageState extends State<MyHomePage> {
 
   /// Fonction pour obtenir l'image de fond en fonction de l'icône de la température
   AssetImage getBackground() {
-    if(temperature?.icon != null){
-      if(temperature?.icon.contains("n")){
+    if(temperature.icon != null){
+      if(temperature.icon.contains("n")){
         return night;
       } else {
-        if(temperature?.icon.contains("01") || temperature?.icon.contains("02") || temperature?.icon.contains("03")){
+        if(temperature.icon.contains("01") || temperature.icon.contains("02") || temperature.icon.contains("03")){
           return sun;
         } else {
           return rain;
@@ -231,6 +247,8 @@ class _MyHomePageState extends State<MyHomePage> {
       }
     }
     return sun;
+
+
   }
 
 //Location
@@ -251,6 +269,8 @@ class _MyHomePageState extends State<MyHomePage> {
     stream = location!.onLocationChanged;
     stream.listen((newPosition) {
 
+
+
       if (locationData == null || ((newPosition.longitude != locationData!.longitude) && (newPosition.latitude != locationData!.latitude))) {
         setState(() {
           locationData = newPosition;
@@ -261,12 +281,16 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  /// Fonction pour convertir la position en nom de vill
+  /// Fonction pour convertir la position en nom de ville
   locationToString() async {
-    final cityName = await placemarkFromCoordinates(locationData!.latitude!, locationData!.longitude!);
-    //print("${cityName.first.locality}");
-    citySelected = cityName.toString();
-    return cityName;
+    final placemarks = await placemarkFromCoordinates(locationData!.latitude!, locationData!.longitude!);
+    if (placemarks.isNotEmpty) {
+      final cityName = placemarks[0]; // Prendre la première entrée (index 0)
+      final name = cityName.locality; // Récupérer le nom (Name)
+      citySelected = name!;
+      //print('================>>>>>>>>>>>>>>>>>>$name');
+    }
+    //return cityName;
   }
 
   /// Fonction pour obtenir les coordonnées à partir du nom de la ville

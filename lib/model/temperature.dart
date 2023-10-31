@@ -16,8 +16,8 @@ class Temperature {
     var temperature = Temperature();
 
     if (map.containsKey("list") && map["list"] is List && map["list"].isNotEmpty) {
-      Map mainData = map["list"][0]["main"];
-      List weatherData = map["list"][0]["weather"];
+      Map? mainData = map["list"][0]["main"];
+      List? weatherData = map["list"][0]["weather"];
 
       if (mainData != null && mainData is Map && weatherData != null && weatherData is List) {
         temperature.temp = mainData["temp"];
