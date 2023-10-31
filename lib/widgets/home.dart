@@ -110,7 +110,7 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
           ),
         ),
-        body:(temperature == '') ? Center(child: Text((citySelected == '') ? citySelected: citySelected),) : Container (
+        body:(temperature == null) ? Center(child: Text((citySelected == '') ? citySelected: citySelected),) : Container (
           width: MediaQuery.of(context).size.width,
           height: MediaQuery.of(context).size.height,
           decoration: BoxDecoration(
