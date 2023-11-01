@@ -113,8 +113,7 @@ class _MyHomePageState extends State<MyHomePage> {
         body:(temperature.icon == null)
             ? Center(
           child: Text((citySelected == '') ? citySelected: citySelected),
-        )
-            : Container (
+        ) : Container (
           width: MediaQuery.of(context).size.width,
           height: MediaQuery.of(context).size.height,
           decoration: BoxDecoration(
@@ -139,7 +138,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         width: MediaQuery.of(context).size.width / 1.2,
                         height: MediaQuery.of(context).size.height / 2,
                         decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
+                            color: Colors.grey.withOpacity(0.4),
                             borderRadius: BorderRadius.circular(30.0)
                         ),
                         child: Column(
@@ -151,6 +150,20 @@ class _MyHomePageState extends State<MyHomePage> {
                               children: [
                                 Image.network((temperature.icon != null)?"https://openweathermap.org/img/wn/${temperature.icon}@2x.png": "https://openweathermap.org/img/wn/10d@2x.png", scale: 0.8,),
                                 textWithStyle((temperature.temp != null)?'${temperature .temp.toInt()}°C':' ', fontSize: 75.0),
+                              ],
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                textWithStyle((temperature.temp_min != null)? 'min : ${temperature.temp_min.toInt()}°C': ' '),
+                                textWithStyle((temperature.temp_max != null)? 'max : ${temperature.temp_max.toInt()}°C': ' ')
+                              ],
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                textWithStyle((temperature.humidity != null)? 'Humidity : ${temperature.humidity.toInt()}%': ' '),
+                                textWithStyle((temperature.pressure != null)? 'Pressure : ${temperature.pressure.toInt()}hpa': ' ')
                               ],
                             ),
                           ],
